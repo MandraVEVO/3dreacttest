@@ -9,6 +9,8 @@ const ModelViewer = () => {
     const [model, setModel] = useState(null);
     const [error, setError] = useState(null);
     const fileInputRef = useRef();
+    const textureInputRef = useRef();
+    const [texture, setTexture] = useState(null);
 
     const handleFileChange = (event) => {
         const file = event.target.files[0];
@@ -49,6 +51,16 @@ const ModelViewer = () => {
 
                     object.scale.set(scaleFactor, scaleFactor, scaleFactor);
 
+                    // Aplicar textura si está disponible
+                    if (texture) {
+                        object.traverse((child) => {
+                            if (child.isMesh) {
+                                child.material.map = texture;
+                                child.material.needsUpdate = true;
+                            }
+                        });
+                    }
+
                     setModel(object);
                 }
                 setError(null);
@@ -64,6 +76,24 @@ const ModelViewer = () => {
         }
     };
 
+    const handleTextureChange = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const loader = new THREE.TextureLoader();
+        loader.load(
+            URL.createObjectURL(file),
+            (loadedTexture) => {
+                setTexture(loadedTexture);
+                setError(null);
+            },
+            undefined,
+            (err) => {
+                setError('Error al cargar la textura. Asegúrate de que sea un archivo .jpg válido.');
+            }
+        );
+    };
+
     return (
         <div className="w-full h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 to-black text-white">
             <label htmlFor="fileInput" className="mb-4 px-6 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg cursor-pointer">Cargar Modelo</label>
@@ -73,6 +103,15 @@ const ModelViewer = () => {
                 accept=".obj,.stl"
                 onChange={handleFileChange}
                 ref={fileInputRef}
+                className="hidden"
+            />
+            <label htmlFor="textureInput" className="mb-4 px-6 py-2 bg-green-500 hover:bg-green-600 rounded-lg cursor-pointer">Cargar Textura</label>
+            <input
+                id="textureInput"
+                type="file"
+                accept=".jpg"
+                onChange={handleTextureChange}
+                ref={textureInputRef}
                 className="hidden"
             />
             {error && <p className="text-red-500 mt-4">{error}</p>}
